@@ -1,13 +1,16 @@
 var React = require('react');
+var DOM = React.DOM;
+var body = DOM.body;
+var div = DOM.div;
+var script = DOM.script;
 var express = require('express');
 var app = express();
 
 var browserify = require('browserify');
 
 app.set('port', (process.argv[2] || 3000));
-app.set('view engine', 'ejs');
-app.set('views', __dirname + '/views');
-app.engine('ejs', require('ejs').renderFile);
+app.set('view engine', 'jsx');
+app.engine('jsx', require('express-react-views').createEngine());
 
 // TodoBoxはjsxなのでnode-jsxが必要
 require('node-jsx').install();
@@ -36,10 +39,18 @@ app.use('/', function(req, res) {
   // サーバ側でレンダリングしたHTML
   var markup = React.renderToString(React.createElement(TodoBox, {data: data}));
 
-  res.render('index.ejs', {
-    initialData: initialData,
-    markup: markup
-  });
+  res.setHeader('Content-Type', 'text/html');
+  
+  var html = React.renderToStaticMarkup(body(null,
+      div({id: 'app', dangerouslySetInnerHTML: {__html: markup}}),
+      script({id: 'initial-data',
+              type: 'text/plain',
+              'data-json': initialData
+            }),
+      script({src: '/bundle.js'})
+  ));
+      
+  res.end(html);
 });
 
 
